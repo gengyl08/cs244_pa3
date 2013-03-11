@@ -26,6 +26,7 @@ from util.monitor import monitor_qlen
 from util.helper import stdev
 
 import re
+import matplotlib.pyplot as plt
 
 # Parse arguments
 
@@ -80,6 +81,12 @@ parser.add_argument('--iperf',
                     help="Path to custom iperf",
                     required=True)
 
+parser.add_argument('--loss',
+                    dest="loss",
+                    help="Link loss rate",
+                    default=0)
+
+
 # Parse Arguments
 args = parser.parse_args()
 
@@ -111,18 +118,18 @@ class SCTopo(Topo):
         h2 = self.addHost('h2')
         s1 = self.addSwitch('s1')
 
-        self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=self.maxq, htb=True)
-        self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=self.maxq, htb=True)
+        self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
+        self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
 
 def start_tcpprobe():
     "Install tcp_probe module and dump to file"
-    print "Start TCP Probe."
+    print "Starting TCP Probe."
     os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
     Popen("cat /proc/net/tcpprobe > %s/tcp_probe.txt" %
           args.dir, shell=True)
 
 def stop_tcpprobe():
-    print "Stop TCP Probe."
+    print "Stopping TCP Probe."
     os.system("killall -9 cat; rmmod tcp_probe &>/dev/null;")
 
 def count_connections():
@@ -204,6 +211,9 @@ def median(l):
 
 def start_measure(iface, net):
 
+    print "Starting measurements."
+
+    print "--Establishing long flow connectinos."
     # Set a higher speed on the bottleneck link in the beginning so
     # flows quickly connect
     set_speed(iface, "2Gbit")
@@ -213,7 +223,7 @@ def start_measure(iface, net):
     while wait_time > 0 and succeeded != args.nflows:
         wait_time -= 1
         succeeded = count_connections()
-        print 'Connections %d/%d succeeded\r' % (succeeded, args.nflows),
+        print 'Connections %d/%d succeeded\r' % (succeeded, args.nflows)
         sys.stdout.flush()
         sleep(1)
 
@@ -230,30 +240,39 @@ def start_measure(iface, net):
     set_speed(iface, "%.2fMbit" % args.bw_net)
     sys.stdout.flush()
 
-    # Wait till link is 90% utilised
-    rate = 0.0
-    while rate <= args.bw_net * 0.7:
-        rate = get_rates(iface)
-        print "measured rate: %s" % rate
-        sys.stdout.flush()
+    print "--Wait till link utilization become stable."
+    rate = 10
+    rate_new = 0
+    while(abs(rate-rate_new) > 0.1 * args.bw_net):
+        rate = rate_new
+        rate_new = get_rates(iface)
+        print rate_new
 
+    print "--Starting tests."   
+    ret = [None]*9
+    temp = [None]*20
     h1 = net.getNodeByName('h1')
     h2 = net.getNodeByName('h2')
-    IP2 = h2.IP()
-    start = time()
-    h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
-    end = time()
-    print end - start
+    IP1 = h1.IP()
+    result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
+    #h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
+    for i in range(9):
+        for j in range(20):
+            line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
+            temp[j] = line
+            print line
+        result.write(' '.join(temp)+'\n')
+    result.close()
     monitor.terminate()
-    return end - start
+    return
 
 def start_receiver(net):
-    print "Starting receiver!"
+    print "Starting receiver."
     h2 = net.getNodeByName('h2')
     h2.popen("%s -s > %s/iperf_server.txt" % (CUSTOM_IPERF_PATH, args.dir), shell=True)
 
 def start_sender(net):
-    print "Starting senders!"
+    print "Starting senders."
     # Seconds to run iperf; keep this very high
     seconds = 3600
     h1 = net.getNodeByName('h1')
@@ -262,6 +281,25 @@ def start_sender(net):
     for i in range(args.nflows):
         h1.popen("%s -c %s -t %d -i 1 -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, seconds, args.cong, args.dir, "iperf_client_"+str(i)+".txt"))
         
+def start_webserver(net):
+    print "Starting web server."
+    h1 = net.getNodeByName('h1')
+    proc = h1.popen("python http/webserver.py", shell=True)
+    sleep(1)
+    return [proc]
+
+def plot():
+    result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'r')
+    lines = result.readlines()
+    y = [None]*len(lines)
+    for i in range(len(lines)):
+        line = lines[i]
+        line = line.split(' ')
+        line = [float(x) for x in line]
+        y[i] = avg(line)
+    plt.plot(range(len(y)), y)
+    plt.savefig("%s/fig_%s_%s.png" % (args.dir, args.nflows, args.loss))
+
 def main():
 
     start = time()
@@ -280,9 +318,14 @@ def main():
 
     start_sender(net)
 
-    # TODO: change the interface for which queue size is adjusted
-    ret = start_measure(iface='s1-eth2', net=net)
-  
+    start_webserver(net)
+
+    start_measure(iface='s1-eth2', net=net)
+
+    plot()
+
+    
+
     # Shut down iperf processes
     os.system('killall -9 ' + CUSTOM_IPERF_PATH)
     net.stop()

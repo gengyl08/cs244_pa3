@@ -24,8 +24,10 @@ iperf=~/iperf-patched/src/iperf
 mn -c
 
 python buffersizing.py --bw-host 1000 \
-		--bw-net 62.5 \
-		--delay 43.5 \
+		--bw-net 1 \
+		--delay 100 \
 		--dir test_output \
-		--nflows 100 \
-		--iperf $iperf
+		--nflows 0 \
+		--iperf $iperf \
+                --loss 10 \
+                --maxq 100
