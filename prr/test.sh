@@ -26,7 +26,7 @@ mn -c
 python buffersizing.py --bw-host 1000 \
 		--bw-net 1 \
 		--delay 100 \
-		--dir test_output \
+		--dir test_output_$(uname -r) \
 		--nflows 0 \
 		--iperf $iperf \
                 --loss 1 \
