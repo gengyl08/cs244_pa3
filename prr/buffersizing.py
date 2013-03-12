@@ -277,7 +277,7 @@ def start_measure(iface, net):
                 temp[j] = line
                 print "Finish in " + line + " seconds."
             result.write(' '.join(temp)+'\n')
-            result.close()
+        result.close()
     elif(args.index == "0"):
         h1.popen("%s -c %s -t 200 -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
 
