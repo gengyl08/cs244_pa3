@@ -20,13 +20,14 @@ exptid=`date +%b%d-%H:%M`
 rootdir=buffersizing-$exptid
 plotpath=util
 iperf=~/iperf-patched/src/iperf
+dir=test_output_$(uname -r)
 
 mn -c
 
 python buffersizing.py --bw-host 1000 \
 		--bw-net 1 \
 		--delay 100 \
-		--dir test_output_$(uname -r) \
+		--dir $dir \
 		--nflows 0 \
 		--iperf $iperf \
                 --loss 1 \
