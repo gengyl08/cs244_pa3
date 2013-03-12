@@ -263,6 +263,7 @@ def start_measure(iface, net):
     h1 = net.getNodeByName('h1')
     h2 = net.getNodeByName('h2')
     IP1 = h1.IP()
+    IP2 = h2.IP()
 
     #Fetch files of all length
     if (args.index == "10"):
@@ -276,6 +277,9 @@ def start_measure(iface, net):
                 temp[j] = line
                 print "Finish in " + line + " seconds."
             result.write(' '.join(temp)+'\n')
+            result.close()
+    elif(args.index == "0"):
+        h1.popen("%s -c %s -t 200 -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
 
     #Fetch a file of certain length
     else:
@@ -287,8 +291,8 @@ def start_measure(iface, net):
             temp[j] = line
             print "Finish in " + line + " seconds."
         result.write(' '.join(temp)+'\n')
+        result.close()
 
-    result.close()
     monitor.terminate()
     return
 

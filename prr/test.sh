@@ -31,4 +31,8 @@ python buffersizing.py --bw-host 1000 \
 		--iperf $iperf \
                 --loss 1 \
                 --maxq 100 \
-                --samples 200
+                --samples 200 \
+                --index 0
+
+python $plotpath/plot_queue.py -f $dir/qlen_$iface.txt -o $dir/q.png
+python $plotpath/plot_tcpprobe.py -f $dir/tcp_probe.txt -o $dir/cwnd.png
