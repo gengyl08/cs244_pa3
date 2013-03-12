@@ -17,7 +17,7 @@ trap ctrlc SIGINT
 start=`date`
 exptid=`date +%b%d-%H:%M`
 
-rootdir=buffersizing-$exptid
+rootdir=prr-$exptid
 plotpath=util
 iperf=~/iperf-patched/src/iperf
 dir=test_output_$(uname -r)
@@ -25,7 +25,7 @@ iface=s1-eth2
 
 mn -c
 
-python buffersizing.py --bw-host 1000 \
+python prr.py --bw-host 1000 \
 		--bw-net 10 \
 		--delay 100 \
 		--dir $dir \
