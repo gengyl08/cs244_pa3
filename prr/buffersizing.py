@@ -96,6 +96,11 @@ parser.add_argument('--index',
                     help="Which file to fetch",
                     default="10")
 
+parser.add_argument('--time',
+                    dest="time",
+                    help="Time to run",
+                    default="200")
+
 # Parse Arguments
 args = parser.parse_args()
 
@@ -279,7 +284,7 @@ def start_measure(iface, net):
             result.write(' '.join(temp)+'\n')
         result.close()
     elif(args.index == "0"):
-        h1.popen("%s -c %s -t 200 -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
+        h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
 
     #Fetch a file of certain length
     else:
