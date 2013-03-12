@@ -21,6 +21,7 @@ rootdir=buffersizing-$exptid
 plotpath=util
 iperf=~/iperf-patched/src/iperf
 dir=test_output_$(uname -r)
+iface=s1-eth2
 
 mn -c
 
