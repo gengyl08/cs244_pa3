@@ -16,8 +16,7 @@ trap ctrlc SIGINT
 
 mn -c
 
-start=`date`
-exptid=`date +%b%d-%H:%M`
+exptid=`date +%m%d%H%M`
 plotpath=util
 iperf=~/iperf-patched/src/iperf
 dir=test_output_$exptid
@@ -31,14 +30,14 @@ python prr.py --bw-host 1000 \
               --iperf $iperf \
               --loss 1 \
               --maxq 100 \
-              --samples 100 \
+              --samples 3 \
               --index -1 \
               --time 600
 
 python $plotpath/plot_queue.py -f $dir/qlen_$iface.txt -o $dir/q.png
-for file in $dir/tcp_probe*.txt
+for input_file in $dir/tcp_probe*.txt
 do
-  namelen=${#file}
-  output_file=${file:0:${namelen}-4}.png
-  python $plotpath/plot_tcpprobe.py -f file -o $dir/output_file
+  namelen=${#input_file}
+  output_file=${input_file:0:${namelen}-4}.png
+  python $plotpath/plot_tcpprobe.py -f $input_file -o $output_file
 done
