@@ -16,6 +16,8 @@ trap ctrlc SIGINT
 
 mn -c
 
+echo "reno" > /proc/sys/net/ipv4/tcp_congestion_control
+
 exptid=`date +%m%d%H%M`
 plotpath=util
 iperf=~/iperf-patched/src/iperf
