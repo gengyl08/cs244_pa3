@@ -262,7 +262,7 @@ def start_measure(iface, net):
             print rate_new
 
     print "--Starting tests."   
-    ret = [None]*5
+    ret = [None]*4
     temp = [None]*int(args.samples);
     h1 = net.getNodeByName('h1')
     h2 = net.getNodeByName('h2')
@@ -273,7 +273,7 @@ def start_measure(iface, net):
     if (args.index == "-1"):
         result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
         #h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
-        for i in range(5):
+        for i in range(4):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
