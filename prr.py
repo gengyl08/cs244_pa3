@@ -22,8 +22,6 @@ from argparse import ArgumentParser
 
 import sys
 import os
-from util.monitor import monitor_qlen
-from util.helper import stdev
 
 import re
 import matplotlib.pyplot as plt
@@ -156,21 +154,9 @@ def start_measure(iface, net):
     #Generate a long flow
     elif(args.index == "0"):
         start_tcpprobe("tcp_probe.txt", 0)
+        print "Please wait for " + args.time + " seconds."
         h1.popen("iperf -c %s -t %s -yc -Z %s > %s/%s" % (IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
         stop_tcpprobe()
-    #Fetch a file of certain length
-    else:
-        result = open("%s/result_loss%s_index%s.txt" % (args.dir, args.loss, args.index), 'w')
-        print "================================"
-        print "Fetching index" + args.index + ".html"
-        for j in range(int(args.samples)):
-            start_tcpprobe("tcp_probe_index%d_%d.txt" % (int(args.index), j+1), 80)
-            line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, args.index), shell=True).stdout.readline()
-            temp[j] = line
-            print "Finish in " + line + " seconds."
-            stop_tcpprobe()
-        result.write(' '.join(temp)+'\n')
-        result.close()
 
     return
 

@@ -29,7 +29,7 @@ for loss in 1 3; do
                   --dir $dir \
                   --maxq 100 \
                   --loss $loss \
-                  --samples 100 \
+                  --samples 10 \
                   --index -1
 done
 
@@ -39,7 +39,7 @@ python prr.py --bw-host 1000 \
               --dir $dir \
               --maxq 50 \
               --index 0 \
-              --time 200
+              --time 20
 
 #Plot cwnd
 for input_file in $dir/tcp_probe*.txt

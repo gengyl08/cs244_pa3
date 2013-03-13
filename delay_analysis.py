@@ -66,7 +66,7 @@ def plot_bar_chart(A_mean, A_std, B_mean, B_std):
     plt.xticks(ind+width, ('0.75KB', '7.5KB', '75KB', '750KB') )
     #plt.yticks(np.arange(0,11,1))
     plt.ylim([0, 20])
-    plt.legend( (p1[0], p2[0]), ('minimal retransmit', 'extensive retransmit'))
+    plt.legend( (p1[0], p2[0]), ('(almost) no retransmission', 'with retransmission'))
 
     plt.savefig(args.output)
 
