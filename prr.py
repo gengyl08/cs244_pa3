@@ -135,9 +135,9 @@ class SCTopo(Topo):
         self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
         self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
 
-def start_tcpprobe(output):
+def start_tcpprobe(output, port):
     "Install tcp_probe module and dump to file"
-    os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
+    os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe port=%d full=1;" % port)
     Popen("cat /proc/net/tcpprobe > %s/%s 2>/dev/null" %
           (args.dir, output), shell=True)
 
@@ -276,7 +276,7 @@ def start_measure(iface, net):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
-                start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1))
+                start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1), 80)
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
                 print "Fetch index%d.html %d: finish in %s seconds." % (i+1, j+1, line)
@@ -284,16 +284,20 @@ def start_measure(iface, net):
             result.write(' '.join(temp)+'\n')
         result.close()
     elif(args.index == "0"):
+        start_tcpprobe("tcp_probe.txt", 0)
         h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
+        stop_tcpprobe()
     #Fetch a file of certain length
     else:
         result = open("%s/result_%s_%s_index%s.txt" % (args.dir, args.nflows, args.loss, args.index), 'w')
         print "================================"
         print "Fetching index" + args.index + ".html"
         for j in range(int(args.samples)):
+            start_tcpprobe("tcp_probe_index%d_%d.txt" % (args.index, j+1), 80)
             line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, args.index), shell=True).stdout.readline()
             temp[j] = line
             print "Finish in " + line + " seconds."
+            stop_tcpprobe()
         result.write(' '.join(temp)+'\n')
         result.close()
 

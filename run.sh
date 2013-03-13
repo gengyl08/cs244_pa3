@@ -36,7 +36,7 @@ python prr.py --bw-host 1000 \
               --time 600
 
 python $plotpath/plot_queue.py -f $dir/qlen_$iface.txt -o $dir/q.png
-for file in $dir/tcp_probe_*.txt
+for file in $dir/tcp_probe*.txt
 do
   namelen=${#file}
   output_file=${file:0:${namelen}-4}.png
