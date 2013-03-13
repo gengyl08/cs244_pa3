@@ -3,7 +3,9 @@
 import sys
 import os
 from argparse import ArgumentParser
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+import pylab as plt
 
 parser = ArgumentParser(description="Parse cwnd")
 

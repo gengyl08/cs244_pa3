@@ -4,7 +4,9 @@ import sys
 import os
 from argparse import ArgumentParser
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+import pylab as plt
 from math import sqrt
 
 parser = ArgumentParser(description="Delay analysis.")
