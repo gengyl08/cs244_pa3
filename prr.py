@@ -139,7 +139,7 @@ def start_tcpprobe(ouptut):
     "Install tcp_probe module and dump to file"
     os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
     Popen("cat /proc/net/tcpprobe > %s/%s" %
-          args.dir, output, shell=True)
+          (args.dir, output), shell=True)
 
 def stop_tcpprobe():
     os.system("killall -9 cat; rmmod tcp_probe &>/dev/null;")
@@ -276,7 +276,7 @@ def start_measure(iface, net):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
-                start_tcpprobe("tcp_probe_index" + str(i+1) + "_" + str(j) + ".txt")
+                start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1))
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
                 print "Finish in " + line + " seconds."
