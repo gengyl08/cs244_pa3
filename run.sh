@@ -31,7 +31,7 @@ python prr.py --bw-host 1000 \
               --iperf $iperf \
               --loss 1 \
               --maxq 100 \
-              --samples 200 \
+              --samples 100 \
               --index -1 \
               --time 600
 

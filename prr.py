@@ -252,7 +252,7 @@ def start_measure(iface, net):
     set_speed(iface, "%.2fMbit" % args.bw_net)
     sys.stdout.flush()
 
-    if (args.nflows > 0)
+    if (args.nflows > 0):
         print "--Wait till link utilization become stable."
         rate = 10
         rate_new = 0
