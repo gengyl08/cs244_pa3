@@ -135,16 +135,14 @@ class SCTopo(Topo):
         self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
         self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
 
-def start_tcpprobe():
+def start_tcpprobe(output, port):
     "Install tcp_probe module and dump to file"
-    print "Starting TCP Probe."
-    os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
-    Popen("cat /proc/net/tcpprobe > %s/tcp_probe.txt" %
-          args.dir, shell=True)
+    os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe port=%d full=1;" % port)
+    Popen("cat /proc/net/tcpprobe > %s/%s 2>/dev/null" %
+          (args.dir, output), shell=True)
 
 def stop_tcpprobe():
-    print "Stopping TCP Probe."
-    os.system("killall -9 cat; rmmod tcp_probe &>/dev/null;")
+    os.system("killall -q -9 cat &>/dev/null; rmmod tcp_probe &>/dev/null;")
 
 def count_connections():
     "Count current connections in iperf output file"
@@ -254,16 +252,17 @@ def start_measure(iface, net):
     set_speed(iface, "%.2fMbit" % args.bw_net)
     sys.stdout.flush()
 
-    print "--Wait till link utilization become stable."
-    rate = 10
-    rate_new = 0
-    while(abs(rate-rate_new) > 0.1 * args.bw_net):
-        rate = rate_new
-        rate_new = get_rates(iface)
-        print rate_new
+    if (args.nflows > 0):
+        print "--Wait till link utilization become stable."
+        rate = 10
+        rate_new = 0
+        while(abs(rate-rate_new) > 0.1 * args.bw_net):
+            rate = rate_new
+            rate_new = get_rates(iface)
+            print rate_new
 
     print "--Starting tests."   
-    ret = [None]*5
+    ret = [None]*4
     temp = [None]*int(args.samples);
     h1 = net.getNodeByName('h1')
     h2 = net.getNodeByName('h2')
@@ -271,30 +270,35 @@ def start_measure(iface, net):
     IP2 = h2.IP()
 
     #Fetch files of all length
-    if (args.index == "10"):
+    if (args.index == "-1"):
         result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
         #h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
-        for i in range(5):
+        for i in range(4):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
+                start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1), 80)
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
-                print "Finish in " + line + " seconds."
+                print "Fetch index%d.html %d: finish in %s seconds." % (i+1, j+1, line)
+                stop_tcpprobe()
             result.write(' '.join(temp)+'\n')
         result.close()
     elif(args.index == "0"):
+        start_tcpprobe("tcp_probe.txt", 0)
         h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
-
+        stop_tcpprobe()
     #Fetch a file of certain length
     else:
         result = open("%s/result_%s_%s_index%s.txt" % (args.dir, args.nflows, args.loss, args.index), 'w')
         print "================================"
         print "Fetching index" + args.index + ".html"
         for j in range(int(args.samples)):
+            start_tcpprobe("tcp_probe_index%d_%d.txt" % (args.index, j+1), 80)
             line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, args.index), shell=True).stdout.readline()
             temp[j] = line
             print "Finish in " + line + " seconds."
+            stop_tcpprobe()
         result.write(' '.join(temp)+'\n')
         result.close()
 
@@ -345,11 +349,8 @@ def main():
     net = Mininet(topo=topo, host=CPULimitedHost, link=TCLink)
     net.start()
     dumpNodeConnections(net.hosts)
-    net.pingAll()
 
     start_receiver(net)
-
-    start_tcpprobe()
 
     start_sender(net)
 
@@ -359,13 +360,13 @@ def main():
 
     plot()
 
-    
-
     # Shut down iperf processes
     os.system('killall -9 ' + CUSTOM_IPERF_PATH)
+
     net.stop()
+
     Popen("killall -9 top bwm-ng tcpdump cat mnexec", shell=True).wait()
-    stop_tcpprobe()
+
     end = time()
 
 if __name__ == '__main__':
