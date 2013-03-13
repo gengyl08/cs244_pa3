@@ -135,15 +135,13 @@ class SCTopo(Topo):
         self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
         self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
 
-def start_tcpprobe():
+def start_tcpprobe(ouptut):
     "Install tcp_probe module and dump to file"
-    print "Starting TCP Probe."
     os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
-    Popen("cat /proc/net/tcpprobe > %s/tcp_probe.txt" %
-          args.dir, shell=True)
+    Popen("cat /proc/net/tcpprobe > %s/%s" %
+          args.dir, output, shell=True)
 
 def stop_tcpprobe():
-    print "Stopping TCP Probe."
     os.system("killall -9 cat; rmmod tcp_probe &>/dev/null;")
 
 def count_connections():
@@ -271,21 +269,22 @@ def start_measure(iface, net):
     IP2 = h2.IP()
 
     #Fetch files of all length
-    if (args.index == "10"):
+    if (args.index == "-1"):
         result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
         #h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
         for i in range(5):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
+                start_tcpprobe("tcp_probe_index" + str(i+1) + "_" + str(j) + ".txt")
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
                 print "Finish in " + line + " seconds."
+                stop_tcpprobe()
             result.write(' '.join(temp)+'\n')
         result.close()
     elif(args.index == "0"):
         h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
-
     #Fetch a file of certain length
     else:
         result = open("%s/result_%s_%s_index%s.txt" % (args.dir, args.nflows, args.loss, args.index), 'w')
@@ -349,8 +348,6 @@ def main():
 
     start_receiver(net)
 
-    start_tcpprobe()
-
     start_sender(net)
 
     start_webserver(net)
@@ -359,13 +356,13 @@ def main():
 
     plot()
 
-    
-
     # Shut down iperf processes
     os.system('killall -9 ' + CUSTOM_IPERF_PATH)
+
     net.stop()
+
     Popen("killall -9 top bwm-ng tcpdump cat mnexec", shell=True).wait()
-    stop_tcpprobe()
+
     end = time()
 
 if __name__ == '__main__':
