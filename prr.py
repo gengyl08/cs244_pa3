@@ -252,13 +252,14 @@ def start_measure(iface, net):
     set_speed(iface, "%.2fMbit" % args.bw_net)
     sys.stdout.flush()
 
-    print "--Wait till link utilization become stable."
-    rate = 10
-    rate_new = 0
-    while(abs(rate-rate_new) > 0.1 * args.bw_net):
-        rate = rate_new
-        rate_new = get_rates(iface)
-        print rate_new
+    if (args.nflows > 0)
+        print "--Wait till link utilization become stable."
+        rate = 10
+        rate_new = 0
+        while(abs(rate-rate_new) > 0.1 * args.bw_net):
+            rate = rate_new
+            rate_new = get_rates(iface)
+            print rate_new
 
     print "--Starting tests."   
     ret = [None]*5
@@ -348,7 +349,6 @@ def main():
     net = Mininet(topo=topo, host=CPULimitedHost, link=TCLink)
     net.start()
     dumpNodeConnections(net.hosts)
-    net.pingAll()
 
     start_receiver(net)
 
