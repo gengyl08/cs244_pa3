@@ -3,25 +3,36 @@
 import sys
 import os
 from argparse import ArgumentParser
+import matplotlib.pyplot as plt
 
 parser = ArgumentParser(description="Parse cwnd")
-parser.add_argument('--dir',
-                    dest="dir",
-                    help="Directory to tcp_probe.txt",
+
+parser.add_argument('--input',
+                    dest="input",
                     required=True)
+
+parser.add_argument('--output',
+                    dest="output",
+                    required=True)
+
 
 args = parser.parse_args()
 
-probe = open(args.dir + "/tcp_probe.txt", 'r')
-cwnd = open(args.dir + "/cwnd.txt", 'w')
-
+probe = open(args.input, 'r')
 lines = probe.readlines()
+time = []
+cwnd = []
 
 for line in lines:
 
     line = line.split(' ')
     if(line[1].startswith("10.0.0.1")):
-        cwnd.write(line[0] + ' ' + line[6] + '\n')
+        time = time + [float(line[0])]
+        cwnd = cwnd + [int(line[6])]
 
 probe.close()
-cwnd.close()
+plt.plot(time, cwnd, 'ro')
+plt.xlabel('time')
+plt.ylabel('cwnd')
+plt.savefig(args.output)
+

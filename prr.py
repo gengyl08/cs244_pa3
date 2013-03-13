@@ -248,7 +248,7 @@ def start_measure(iface, net):
         print 'Giving up'
         return -1
 
-    # TODO: Set the speed back to the bottleneck link speed.
+    # Set the speed back to the bottleneck link speed.
     set_speed(iface, "%.2fMbit" % args.bw_net)
     sys.stdout.flush()
 
@@ -272,18 +272,18 @@ def start_measure(iface, net):
     #Fetch files of all length
     if (args.index == "-1"):
         result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
-        #h1.popen("%s -c %s -n 2M -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.cong, args.dir, "iperf_client.txt")).wait()
         for i in range(4):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
             for j in range(int(args.samples)):
-                start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1), 80)
+                #start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1), 80)
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
                 print "Fetch index%d.html %d: finish in %s seconds." % (i+1, j+1, line)
-                stop_tcpprobe()
+                #stop_tcpprobe()
             result.write(' '.join(temp)+'\n')
         result.close()
+    #Generate a long flow
     elif(args.index == "0"):
         start_tcpprobe("tcp_probe.txt", 0)
         h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
@@ -294,7 +294,7 @@ def start_measure(iface, net):
         print "================================"
         print "Fetching index" + args.index + ".html"
         for j in range(int(args.samples)):
-            start_tcpprobe("tcp_probe_index%d_%d.txt" % (args.index, j+1), 80)
+            start_tcpprobe("tcp_probe_index%d_%d.txt" % (int(args.index), j+1), 80)
             line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, args.index), shell=True).stdout.readline()
             temp[j] = line
             print "Finish in " + line + " seconds."
