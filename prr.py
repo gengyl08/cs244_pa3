@@ -135,14 +135,14 @@ class SCTopo(Topo):
         self.addLink(h1, s1, bw=self.bw_host, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
         self.addLink(h2, s1, bw=self.bw_net, delay=self.delay, max_queue_size=int(self.maxq), loss=float(args.loss), htb=True)
 
-def start_tcpprobe(ouptut):
+def start_tcpprobe(output):
     "Install tcp_probe module and dump to file"
     os.system("rmmod tcp_probe 2>/dev/null; modprobe tcp_probe;")
-    Popen("cat /proc/net/tcpprobe > %s/%s" %
+    Popen("cat /proc/net/tcpprobe > %s/%s 2>/dev/null" %
           (args.dir, output), shell=True)
 
 def stop_tcpprobe():
-    os.system("killall -9 cat; rmmod tcp_probe &>/dev/null;")
+    os.system("killall -q -9 cat &>/dev/null; rmmod tcp_probe &>/dev/null;")
 
 def count_connections():
     "Count current connections in iperf output file"
@@ -279,7 +279,7 @@ def start_measure(iface, net):
                 start_tcpprobe("tcp_probe_index%d_%d.txt" % (i+1, j+1))
                 line = h2.popen("curl -o /dev/null -s -w %%\{time_total\} %s/http/index%s.html" % (IP1, i+1), shell=True).stdout.readline()
                 temp[j] = line
-                print "Finish in " + line + " seconds."
+                print "Fetch index%d.html %d: finish in %s seconds." % (i+1, j+1, line)
                 stop_tcpprobe()
             result.write(' '.join(temp)+'\n')
         result.close()
