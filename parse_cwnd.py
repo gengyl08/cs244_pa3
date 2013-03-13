@@ -31,7 +31,7 @@ for line in lines:
         cwnd = cwnd + [int(line[6])]
 
 probe.close()
-plt.plot(time, cwnd, 'ro')
+plt.plot(time, cwnd, 'bo')
 plt.xlabel('time')
 plt.ylabel('cwnd')
 plt.savefig(args.output)

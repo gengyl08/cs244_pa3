@@ -27,45 +27,16 @@ for loss in 1 3; do
                   --bw-net 1.2 \
                   --delay 25 \
                   --dir $dir \
-                  --nflows 0 \
-                  --iperf $iperf \
-                  --loss $loss \
                   --maxq 100 \
+                  --loss $loss \
                   --samples 100 \
                   --index -1
 done
-
-# Uncomment this if you have a super computer.
-#for nflows in 10 100; do
-#    python prr.py --bw-host 1000 \
-#                  --bw-net 1.2 \
-#                  --delay 25 \
-#                  --dir $dir \
-#                  --nflows $nflows \
-#                  --iperf $iperf \
-#                  --loss 0 \
-#                  --maxq 100
-#                  --samples 1 \
-#                  --index -1
-#done
-
-#python prr.py --bw-host 1000 \
-#              --bw-net 1.2 \
-#              --delay 25 \
-#              --dir $dir \
-#              --nflows 0 \
-#              --iperf $iperf \
-#              --loss 1 \
-#              --maxq 100 \
-#              --samples 20 \
-#              --index 4
 
 python prr.py --bw-host 1000 \
               --bw-net 1.2 \
               --delay 25 \
               --dir $dir \
-              --nflows 0 \
-              --iperf $iperf \
               --maxq 50 \
               --index 0 \
               --time 200

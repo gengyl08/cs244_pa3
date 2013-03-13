@@ -58,13 +58,6 @@ parser.add_argument('--dir', '-d',
                     default="results",
                     required=True)
 
-parser.add_argument('--nflows',
-                    dest="nflows",
-                    action="store",
-                    type=int,
-                    help="Number of long iperf flows",
-                    required=True)
-
 parser.add_argument('--maxq',
                     dest="maxq",
                     action="store",
@@ -75,11 +68,6 @@ parser.add_argument('--cong',
                     dest="cong",
                     help="Congestion control algorithm to use",
                     default="reno")
-
-parser.add_argument('--iperf',
-                    dest="iperf",
-                    help="Path to custom iperf",
-                    required=True)
 
 parser.add_argument('--loss',
                     dest="loss",
@@ -103,10 +91,6 @@ parser.add_argument('--time',
 
 # Parse Arguments
 args = parser.parse_args()
-
-# Path of custom iperf
-CUSTOM_IPERF_PATH = args.iperf
-assert(os.path.exists(CUSTOM_IPERF_PATH))
 
 # Build directory for results
 if not os.path.exists(args.dir):
@@ -144,124 +128,10 @@ def start_tcpprobe(output, port):
 def stop_tcpprobe():
     os.system("killall -q -9 cat &>/dev/null; rmmod tcp_probe &>/dev/null;")
 
-def count_connections():
-    "Count current connections in iperf output file"
-    out = args.dir + "/iperf_server.txt"
-    lines = Popen("grep connected %s | wc -l" % out,
-                  shell=True, stdout=PIPE).communicate()[0]
-    return int(lines)
-
-def set_q(iface, q):
-    "Change queue size limit of interface"
-    cmd = ("tc qdisc change dev %s parent 1:1 "
-           "handle 10: netem limit %s" % (iface, q))
-    subprocess.check_output(cmd, shell=True)
-
-def set_speed(iface, spd):
-    "Change htb maximum rate for interface"
-    cmd = ("tc class change dev %s parent 1:0 classid 1:1 "
-           "htb rate %s burst 15k" % (iface, spd))
-    os.system(cmd)
-
-def get_txbytes(iface):
-    f = open('/proc/net/dev', 'r')
-    lines = f.readlines()
-    for line in lines:
-        if iface in line:
-            break
-    f.close()
-    if not line:
-        raise Exception("could not find iface %s in /proc/net/dev:%s" %
-                        (iface, lines))
-    # Extract TX bytes from:
-    #Inter-|   Receive                                                |  Transmit
-    # face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
-    # lo: 6175728   53444    0    0    0     0          0         0  6175728   53444    0    0    0     0       0          0
-    return float(line.split()[9])
-
-def get_rates(iface):
-    nsamples = 4
-    last_time = 0
-    last_txbytes = 0
-    ret = []
-    sleep(3)
-    while nsamples:
-        nsamples -= 1
-        txbytes = get_txbytes(iface)
-        now = time()
-        elapsed = now - last_time
-        last_time = now
-        # Get rate in Mbps; correct for elapsed time.
-        rate = (txbytes - last_txbytes) * 8.0 / 1e6 / elapsed
-        if last_txbytes != 0:
-            ret.append(rate)
-        last_txbytes = txbytes
-        print '.',
-        sys.stdout.flush()
-        sleep(1)
-    return avg(ret)
-
-def avg(s):
-    "Compute average of list or string of values"
-    if ',' in s:
-        lst = [float(f) for f in s.split(',')]
-    elif type(s) == str:
-        lst = [float(s)]
-    elif type(s) == list:
-        lst = s
-    return sum(lst)/len(lst)
-
-def median(l):
-    "Compute median from an unsorted list of values"
-    s = sorted(l)
-    if len(s) % 2 == 1:
-        return s[(len(l) + 1) / 2 - 1]
-    else:
-        lower = s[len(l) / 2 - 1]
-        upper = s[len(l) / 2]
-        return float(lower + upper) / 2
-
 def start_measure(iface, net):
 
     print "Starting measurements."
 
-    print "--Establishing long flow connectinos."
-    # Set a higher speed on the bottleneck link in the beginning so
-    # flows quickly connect
-    set_speed(iface, "2Gbit")
-
-    succeeded = 0
-    wait_time = 300
-    while wait_time > 0 and succeeded != args.nflows:
-        wait_time -= 1
-        succeeded = count_connections()
-        print 'Connections %d/%d succeeded\r' % (succeeded, args.nflows)
-        sys.stdout.flush()
-        sleep(1)
-
-    monitor = Process(target=monitor_qlen,
-                      args=(iface, 0.01, '%s/qlen_%s.txt' %
-                            (args.dir, iface)))
-    monitor.start()
-
-    if succeeded != args.nflows:
-        print 'Giving up'
-        return -1
-
-    # Set the speed back to the bottleneck link speed.
-    set_speed(iface, "%.2fMbit" % args.bw_net)
-    sys.stdout.flush()
-
-    if (args.nflows > 0):
-        print "--Wait till link utilization become stable."
-        rate = 10
-        rate_new = 0
-        while(abs(rate-rate_new) > 0.1 * args.bw_net):
-            rate = rate_new
-            rate_new = get_rates(iface)
-            print rate_new
-
-    print "--Starting tests."   
     ret = [None]*4
     temp = [None]*int(args.samples);
     h1 = net.getNodeByName('h1')
@@ -271,7 +141,7 @@ def start_measure(iface, net):
 
     #Fetch files of all length
     if (args.index == "-1"):
-        result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'w')
+        result = open("%s/result_loss%s.txt" % (args.dir, args.loss), 'w')
         for i in range(4):
             print "================================"
             print "Fetching index" + str(i+1) + ".html"
@@ -286,11 +156,11 @@ def start_measure(iface, net):
     #Generate a long flow
     elif(args.index == "0"):
         start_tcpprobe("tcp_probe.txt", 0)
-        h1.popen("%s -c %s -t %s -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
+        h1.popen("iperf -c %s -t %s -yc -Z %s > %s/%s" % (IP2, args.time, args.cong, args.dir, "iperf_client.txt")).wait()
         stop_tcpprobe()
     #Fetch a file of certain length
     else:
-        result = open("%s/result_%s_%s_index%s.txt" % (args.dir, args.nflows, args.loss, args.index), 'w')
+        result = open("%s/result_loss%s_index%s.txt" % (args.dir, args.loss, args.index), 'w')
         print "================================"
         print "Fetching index" + args.index + ".html"
         for j in range(int(args.samples)):
@@ -302,23 +172,12 @@ def start_measure(iface, net):
         result.write(' '.join(temp)+'\n')
         result.close()
 
-    monitor.terminate()
     return
 
 def start_receiver(net):
     print "Starting receiver."
     h2 = net.getNodeByName('h2')
-    h2.popen("%s -s > %s/iperf_server.txt" % (CUSTOM_IPERF_PATH, args.dir), shell=True)
-
-def start_sender(net):
-    print "Starting senders."
-    # Seconds to run iperf; keep this very high
-    seconds = 3600
-    h1 = net.getNodeByName('h1')
-    h2 = net.getNodeByName('h2')
-    IP2 = h2.IP()
-    for i in range(args.nflows):
-        h1.popen("%s -c %s -t %d -i 1 -yc -Z %s > %s/%s" % (CUSTOM_IPERF_PATH, IP2, seconds, args.cong, args.dir, "iperf_client_"+str(i)+".txt"))
+    h2.popen("iperf -s > %s/iperf_server.txt" % args.dir, shell=True)
         
 def start_webserver(net):
     print "Starting web server."
@@ -327,22 +186,8 @@ def start_webserver(net):
     sleep(1)
     return [proc]
 
-def plot():
-    result = open("%s/result_%s_%s.txt" % (args.dir, args.nflows, args.loss), 'r')
-    lines = result.readlines()
-    y = [None]*len(lines)
-    for i in range(len(lines)):
-        line = lines[i]
-        line = line.split(' ')
-        line = [float(x) for x in line]
-        y[i] = avg(line)
-    plt.plot(range(len(y)), y)
-    plt.savefig("%s/fig_%s_%s.png" % (args.dir, args.nflows, args.loss))
-
 def main():
 
-    start = time()
-    # Reset to known state
     topo = SCTopo(bw_host=args.bw_host,
                     delay='%sms' % args.delay,
                     bw_net=args.bw_net, maxq=args.maxq)
@@ -352,22 +197,16 @@ def main():
 
     start_receiver(net)
 
-    start_sender(net)
-
     start_webserver(net)
 
     start_measure(iface='s1-eth2', net=net)
 
-    plot()
-
     # Shut down iperf processes
-    os.system('killall -9 ' + CUSTOM_IPERF_PATH)
+    os.system('killall -9 iperf')
 
     net.stop()
 
     Popen("killall -9 top bwm-ng tcpdump cat mnexec", shell=True).wait()
-
-    end = time()
 
 if __name__ == '__main__':
     try:
