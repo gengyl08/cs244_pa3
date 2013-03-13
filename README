@@ -18,3 +18,10 @@ Instructions to Replicate the Experiments
      git clone git://github.com/gengyl08/cs244_pa3.git
      cd cs244_pa3
      sudo ./run.sh
+
+4. Interpret the generated graphs
+   In each VM, there is a test_output_$timestamp folder. You can find the the following files in it:
+     tcp_probe.png: Figure of cwnd of a single flow
+     result_loss1.png: Latency at link loss rate of 1%
+     result_loss3.png: Latency at link loss rate of 3%
+
