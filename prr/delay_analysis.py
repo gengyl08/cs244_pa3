@@ -57,7 +57,7 @@ def plot_bar_chart(A_mean, A_std, B_mean, B_std):
     plt.title('Delay by file size and w./w.o. retransmit')
     plt.xticks(ind+width, ('G1', 'G2', 'G3', 'G4', 'G5') )
     plt.yticks(np.arange(0,11,1))
-    plt.legend( (p1[0], p2[0]), ('without retransmit', 'with retransmit') )
+    plt.legend( (p1[0], p2[0]), ('without retransmit', 'with retransmit'))
 
     plt.show()
 
