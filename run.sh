@@ -58,3 +58,6 @@ do
   output_file=${input_file:0:${namelen}-4}.png
   python delay_analysis.py --file $input_file --output $output_file
 done
+
+#plot delay v.s. loss
+python loss_analysis.py --input1 $dir/result_loss1.txt --input2 $dir/result_loss3.txt --output loss.png
