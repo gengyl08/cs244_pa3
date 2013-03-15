@@ -60,4 +60,4 @@ do
 done
 
 #plot delay v.s. loss
-python loss_analysis.py --input1 $dir/result_loss1.txt --input2 $dir/result_loss3.txt --output loss.png
+python loss_analysis.py --input1 $dir/result_loss1.txt --input2 $dir/result_loss3.txt --output $dir/loss.png
